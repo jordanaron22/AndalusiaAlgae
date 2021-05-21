@@ -9,6 +9,8 @@ ClassificationToxin(observed_val, last_observed_val, latent_val, tox_em)
 \arguments{
 \item{observed_val}{Observed toxin measurement}
 
+\item{last_observed_val}{Toxin measurement at last time point}
+
 \item{latent_val}{Latent Markov state}
 
 \item{tox_em}{Classification matrix from ordinal regression parameters}

@@ -15,11 +15,11 @@ GenerateSimulatedMC(init, tran, toxin_data_len, mu_a, k, tox_em, missing_perc)
 
 \item{mu_a}{mean negative binomial parameter}
 
+\item{k}{size negative binomial parameter}
+
 \item{tox_em}{Classification matrix from ordinal regression parameters}
 
 \item{missing_perc}{Percent of data to remove from simulated data}
-
-\item{k_a}{size negative binomial parameter}
 }
 \value{
 Returns simulated data

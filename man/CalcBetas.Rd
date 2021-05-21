@@ -19,11 +19,11 @@ CalcBetas(algae_data, toxin_data, forw, backw, tran, mu_a, k, tox_em, denom)
 
 \item{mu_a}{mean negative binomial parameter}
 
+\item{k}{size negative binomial parameter}
+
 \item{tox_em}{Classification matrix from ordinal regression parameters}
 
 \item{denom}{Denominator used in expected value calculations, total likelihood of all data}
-
-\item{k_a}{size negative binomial parameter}
 }
 \value{
 Returns betas for ordinal logistic regression

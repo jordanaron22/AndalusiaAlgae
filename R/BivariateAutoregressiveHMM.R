@@ -1,7 +1,4 @@
 ###########################
-library(matrixStats)
-library(MASS)
-
 #' Calculates probability of observed algae
 #'
 #' Calculates probability of observed algae based on latent state and negative binomial parameters
@@ -34,8 +31,10 @@ ClassificationAlgae <- function(observed_val,latent_val,mu_a,k_a){
 #'
 #' Calculates probability of observed toxin based on latent state and ordinal regression parameters
 #' @param observed_val Observed toxin measurement
+#' @param last_observed_val Toxin measurement at last time point
 #' @param latent_val Latent Markov state
 #' @param tox_em Classification matrix from ordinal regression parameters
+#' @importFrom stats dnbinom
 #' @return Probability of observed toxin
 #' @export
 ClassificationToxin <- function(observed_val,last_observed_val,latent_val,tox_em){
@@ -50,8 +49,6 @@ ClassificationToxin <- function(observed_val,last_observed_val,latent_val,tox_em
   }
 }
 
-#' Part of forward algorithm
-#' @export
 ForwardLinearHelper <- function(old_alpha,alg_data,tox_data,last_tox,tran,mu_a,k_a,tox_em){
   states <- c(0:1)
   toxin_states <- c(0:3)
@@ -67,8 +64,6 @@ ForwardLinearHelper <- function(old_alpha,alg_data,tox_data,last_tox,tran,mu_a,k
   return(pseudo_alpha_matrix)
 }
 
-#' Part of forward algorithm
-#' @export
 ForwardLinearHelperMissing <- function(old_alpha_mat,alg_data,tox_data,tran,mu_a,k_a,tox_em){
   states <- c(0:1)
   toxin_states <- c(0:3)
@@ -226,8 +221,6 @@ BackwardLinear <- function(algae_data,toxin_data,time,tran,mu_a,k_a,tox_em){
   return(beta_matrix)
 }
 
-#' Part of backward algorithm
-#' @export
 BackwardLinearHelper <- function(new_beta,alg_data,tox_data,obs_tox,tran,mu_a,k_a,tox_em){
   new_beta <- new_beta[[1]]
   pseudo_beta_matrix <- numeric(length(states))
@@ -245,8 +238,6 @@ BackwardLinearHelper <- function(new_beta,alg_data,tox_data,obs_tox,tran,mu_a,k_
   return(pseudo_beta_matrix)
 }
 
-#' Part of backward algorithm
-#' @export
 BackwardLinearHelperMissing <- function(new_beta,alg_data,obs_tox,tran,mu_a,k_a,tox_em){
   pseudo_beta_matrix <- numeric(length(states))
   new_beta_mat <- matrix(0,length(toxin_states),length(states))
@@ -279,6 +270,7 @@ BackwardLinearHelperMissing <- function(new_beta,alg_data,obs_tox,tran,mu_a,k_a,
 #' Collapses backward probabilities over missing data
 #' @param backw Backward probabilities to collapse
 #' @param time Time to collapse at
+#' @import matrixStats
 #' @return Returns collapsed backward quantity
 #' @export
 CollapseBackw <- function(backw,time){
@@ -543,10 +535,11 @@ Ord2Mat <- function(coeffs, zetas){
 #' @param backw Backward probabilities
 #' @param tran Old Markov state transition probabilities
 #' @param mu_a mean negative binomial parameter
-#' @param k_a size negative binomial parameter
+#' @param k size negative binomial parameter
 #' @param tox_em Classification matrix from ordinal regression parameters
 #' @param denom Denominator used in expected value calculations, total likelihood of all data
 #' @return Returns betas for ordinal logistic regression
+#' @import MASS
 #' @export
 CalcBetas <- function(algae_data,toxin_data,forw,backw,tran,mu_a,k,tox_em,denom){
   states <- c(0:1)
@@ -659,8 +652,7 @@ CalcBetas <- function(algae_data,toxin_data,forw,backw,tran,mu_a,k,tox_em,denom)
 
   colnames(ord_log_df) <- c("CurrentTox","LastTox","MarkovChain","Weights","Time")
   ord_log_df$CurrentTox <- factor(ord_log_df$CurrentTox)
-  betas <- polr(CurrentTox ~ LastTox + MarkovChain, data = ord_log_df, weights = Weights, method = "logistic")
-  # betas <- polr(CurrentTox ~ MarkovChain, data = ord_log_df, weights = Weights, method = "logistic")
+  betas <- polr(CurrentTox ~ LastTox + MarkovChain, data = ord_log_df, weights = ord_log_df$Weights, method = "logistic")
   return(list(betas$coefficients,betas$zeta))
 }
 
@@ -695,10 +687,11 @@ Cont2Ord <- function(toxin_data,co1,co2,co3){
 #' @param tran Transition Markov state probabilities
 #' @param toxin_data_len Length of days to simulate
 #' @param mu_a mean negative binomial parameter
-#' @param k_a size negative binomial parameter
+#' @param k size negative binomial parameter
 #' @param tox_em Classification matrix from ordinal regression parameters
 #' @param missing_perc Percent of data to remove from simulated data
 #' @return Returns simulated data
+#' @import stats
 #' @export
 GenerateSimulatedMC <- function(init, tran, toxin_data_len,mu_a,k,tox_em,missing_perc){
   sim_markov_chain <- numeric(toxin_data_len)
