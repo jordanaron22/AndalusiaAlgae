@@ -15,12 +15,6 @@ library(AndalusiaAlgaePackage)
 ## Simulated Data
 
 ```{r}
-#Sets number of Markov states
-states <- c(0:1)
-
-#Sets number of discretized toxin states
-toxin_states <- c(0:3)
-
 #Threshold for algae counts
 threshold <- 0
 
@@ -70,7 +64,7 @@ toxin_data <- simulated_data[[2]]
 
 est_param <- RunEM(algae_data,toxin_data,
                    init_true,tran_true,mu_a_true,k_true,betas_true,
-                   threshold,epsilon,states,toxin_states)
+                   threshold,epsilon)
                    
 #Output est_param is a list of lists
 #est_param[[1]] are the estimated initial Markov state values
