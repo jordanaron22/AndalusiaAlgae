@@ -718,6 +718,7 @@ GenerateSimulatedMC <- function(init, tran, toxin_data_len,mu_a,k,tox_em,missing
 #' @return Returns initial probabilities
 #' @export
 RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsilon){
+
   states <- c(0:1)
   toxin_states <- c(0:3)
 
