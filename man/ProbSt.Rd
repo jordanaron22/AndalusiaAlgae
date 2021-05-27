@@ -4,7 +4,7 @@
 \alias{ProbSt}
 \title{Calculates latent state probability at specific time}
 \usage{
-ProbSt(forw, backw, time)
+ProbSt(forw, backw, time, states, toxin_states)
 }
 \arguments{
 \item{forw}{Forward probabilities}

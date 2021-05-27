@@ -4,7 +4,17 @@
 \alias{BackwardLinear}
 \title{Autoregressive Backward Algorithm adapted from Stanculescu et al}
 \usage{
-BackwardLinear(algae_data, toxin_data, time, tran, mu_a, k_a, tox_em)
+BackwardLinear(
+  algae_data,
+  toxin_data,
+  time,
+  tran,
+  mu_a,
+  k_a,
+  tox_em,
+  states,
+  toxin_states
+)
 }
 \arguments{
 \item{algae_data}{Algae count data}

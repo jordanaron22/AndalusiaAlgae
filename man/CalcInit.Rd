@@ -4,7 +4,7 @@
 \alias{CalcInit}
 \title{Calculates latent state initial probabilities}
 \usage{
-CalcInit(forw, backw)
+CalcInit(forw, backw, states, toxin_states)
 }
 \arguments{
 \item{forw}{Forward probabilities}

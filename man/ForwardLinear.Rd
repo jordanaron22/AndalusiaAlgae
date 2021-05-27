@@ -4,7 +4,18 @@
 \alias{ForwardLinear}
 \title{Autoregressive Forward Algorithm adapted from Stanculescu et al}
 \usage{
-ForwardLinear(algae_data, toxin_data, time, init, tran, mu_a, k_a, tox_em)
+ForwardLinear(
+  algae_data,
+  toxin_data,
+  time,
+  init,
+  tran,
+  mu_a,
+  k_a,
+  tox_em,
+  states,
+  toxin_states
+)
 }
 \arguments{
 \item{algae_data}{Algae count data}

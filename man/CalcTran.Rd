@@ -4,7 +4,18 @@
 \alias{CalcTran}
 \title{Calculates latent state transition probabilities}
 \usage{
-CalcTran(forw, backw, tran, algae_data, toxin_data, mu_a, k_a, tox_em)
+CalcTran(
+  forw,
+  backw,
+  tran,
+  algae_data,
+  toxin_data,
+  mu_a,
+  k_a,
+  tox_em,
+  states,
+  toxin_states
+)
 }
 \arguments{
 \item{forw}{Forward probabilities}

@@ -4,7 +4,7 @@
 \alias{Ord2Mat}
 \title{Transforms ordinal regression parameters to classification matrix}
 \usage{
-Ord2Mat(coeffs, zetas)
+Ord2Mat(coeffs, zetas, states, toxin_states)
 }
 \arguments{
 \item{coeffs}{Regression coefficents}

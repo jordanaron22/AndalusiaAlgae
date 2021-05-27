@@ -4,7 +4,7 @@
 \alias{CollapseBackw}
 \title{Collapses backward probabilities}
 \usage{
-CollapseBackw(backw, time)
+CollapseBackw(backw, time, states, toxin_states)
 }
 \arguments{
 \item{backw}{Backward probabilities to collapse}

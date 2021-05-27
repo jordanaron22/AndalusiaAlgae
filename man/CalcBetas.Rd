@@ -4,7 +4,19 @@
 \alias{CalcBetas}
 \title{Calculates ordinal logistic regression parameters}
 \usage{
-CalcBetas(algae_data, toxin_data, forw, backw, tran, mu_a, k, tox_em, denom)
+CalcBetas(
+  algae_data,
+  toxin_data,
+  forw,
+  backw,
+  tran,
+  mu_a,
+  k,
+  tox_em,
+  denom,
+  states,
+  toxin_states
+)
 }
 \arguments{
 \item{algae_data}{Algae count data}

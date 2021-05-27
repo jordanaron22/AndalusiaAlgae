@@ -4,7 +4,19 @@
 \alias{RunEM}
 \title{Runs EM}
 \usage{
-RunEM(algae_data, toxin_data, init, tran, mu_a, k_a, betas, threshold)
+RunEM(
+  algae_data,
+  toxin_data,
+  init,
+  tran,
+  mu_a,
+  k_a,
+  betas,
+  threshold,
+  epsilon,
+  states,
+  toxin_states
+)
 }
 \arguments{
 \item{algae_data}{Algae count data}

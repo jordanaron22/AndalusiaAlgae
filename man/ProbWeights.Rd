@@ -4,7 +4,7 @@
 \alias{ProbWeights}
 \title{Calculates relative weights of the binary Markov states}
 \usage{
-ProbWeights(data, forw, backw)
+ProbWeights(data, forw, backw, states, toxin_states)
 }
 \arguments{
 \item{data}{Either algae or toxin data to get the length of time in study}

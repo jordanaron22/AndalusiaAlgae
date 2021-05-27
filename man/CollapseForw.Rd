@@ -4,7 +4,7 @@
 \alias{CollapseForw}
 \title{Collapses forward probabilities}
 \usage{
-CollapseForw(forw, time)
+CollapseForw(forw, time, states, toxin_states)
 }
 \arguments{
 \item{forw}{Forward probabilities to collapse}
