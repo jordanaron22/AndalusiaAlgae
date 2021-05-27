@@ -73,11 +73,11 @@ est_param <- RunEM(algae_data,toxin_data,
                    threshold,epsilon,states,toxin_states)
                    
 #Output est_param is a list of lists
-#est_param[[1]] is estimated initial Markov state values
-#est_param[[2]] is estimated Markov transition probabilities
-#est_param[[3]] is estimated mean paramater for negative binomial
-#est_param[[4]] is estimated size paramater for negative binomial
-#est_param[[5]][[1]][[1]] is estimated regression effect from previous DST state on current DST state 
-#est_param[[5]][[1]][[2]] is estimated regression effect from current Markov state on current DST state 
-#est_param[[5]][[2]] is estimated intercept coefficients
+#est_param[[1]] are the estimated initial Markov state values
+#est_param[[2]] are the estimated Markov transition probabilities
+#est_param[[3]] is the estimated mean paramater for negative binomial
+#est_param[[4]] is the estimated size paramater for negative binomial
+#est_param[[5]][[1]][[1]] is the estimated regression effect from previous DST state on current DST state 
+#est_param[[5]][[1]][[2]] is the estimated regression effect from current Markov state on current DST state 
+#est_param[[5]][[2]] are the estimated intercept coefficients
 ```
