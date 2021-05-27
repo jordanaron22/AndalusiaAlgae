@@ -4,9 +4,7 @@ This package is used to model algae toxin and algae counts simultaneously using 
 It was developed focusing on western Andalusia. Algae counts (as integers) are modeled using a negative binomial model.
 Toxin measurements are discretized into 4 states and then modeled with ordinal logistic regression. 
 
-## Example
-
-### Installation
+## Installation
 
 ```{r}
 install.packages("devtools")
@@ -14,7 +12,7 @@ devtools::install_github("jordanaron22/AndalusiaAlgae")
 library(ImputingMetabolites)
 ```
 
-### Simulated Data
+## Simulated Data
 
 ```{r}
 #Sets number of Markov states
