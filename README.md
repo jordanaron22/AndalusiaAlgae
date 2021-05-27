@@ -19,15 +19,33 @@ library(ImputingMetabolites)
 ```{r}
 #Sets number of Markov states
 states <- c(0:1)
+
 #Sets number of discretized toxin states
 toxin_states <- c(0:3)
+
+#Threshold for algae counts
 threshold <- 50
+
+#Stopping threshold for EM
 epsilon <- .5001
+
+#starting initial Markov state values
 init_true <- c(.75,.25)
+
+#starting Markov transition probabilities
 tran_true <- matrix(c(.60,.40,
                       .20,.80), 2,2, byrow = T)
+                      
+#starting mean paramater for negative binomial
 mu_a_true <- 64
+
+
+#starting size paramater for negative binomial
 k_true <- 0.25
+
+#starting regression coefficients for ordinal logistic regression
+#first grouping is for effects of last DST state and current Markov state, respectivly
+#second grouping is for intercepts
 betas_true <- list(c(1,3),c(3,4,5))
 
 ######Simulated Parameters######
