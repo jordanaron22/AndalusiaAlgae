@@ -22,7 +22,7 @@ states <- c(0:1)
 toxin_states <- c(0:3)
 
 #Threshold for algae counts
-threshold <- 50
+threshold <- 0
 
 #Stopping threshold for EM
 epsilon <- .5001
