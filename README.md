@@ -48,7 +48,7 @@ missing_perc <- .3
 sample_size <- 2000
 
 #Creates simulated data and organizes it
-simulated_data <- SimData(init_true,tran_true,mu_a_true,k_true,betas_true,missing_perc,sample_size,states,toxin_states)
+simulated_data <- SimData(init_true,tran_true,mu_a_true,k_true,betas_true,missing_perc,sample_size)
 algae_data <- simulated_data[[1]]
 toxin_data <- simulated_data[[2]]
 ###################################
