@@ -19,7 +19,7 @@ library(AndalusiaAlgaePackage)
 threshold <- 0
 
 #Stopping threshold for EM
-epsilon <- .5001
+epsilon <- .001
 
 #starting initial Markov state values
 init_true <- c(.75,.25)
