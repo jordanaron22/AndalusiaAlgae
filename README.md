@@ -9,7 +9,7 @@ Toxin measurements are discretized into 4 states and then modeled with ordinal l
 ```{r}
 install.packages("devtools")
 devtools::install_github("jordanaron22/AndalusiaAlgae")
-library(ImputingMetabolites)
+library(AndalusiaAlgaePackage)
 ```
 
 ## Simulated Data
