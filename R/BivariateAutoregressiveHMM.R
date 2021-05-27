@@ -779,7 +779,10 @@ RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsil
 #' @param data_len Number of days to simulate
 #' @return Returns simulated data
 #' @export
-SimData <- function(init_true,tran_true,mu_a_true,k_true,betas_true,missing_perc,data_len,states,toxin_states){
+SimData <- function(init_true,tran_true,mu_a_true,k_true,betas_true,missing_perc,data_len){
+  states <- c(0:1)
+  toxin_states <- c(0:3)
+
   tox_em_true <- Ord2Mat(betas_true[[1]],betas_true[[2]],states,toxin_states)
 
   algae_tox_dfs <- GenerateSimulatedMC(init_true,tran_true,data_len,mu_a_true,k_true,tox_em_true,missing_perc)

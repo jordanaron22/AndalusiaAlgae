@@ -11,9 +11,7 @@ SimData(
   k_true,
   betas_true,
   missing_perc,
-  data_len,
-  states,
-  toxin_states
+  data_len
 )
 }
 \arguments{
