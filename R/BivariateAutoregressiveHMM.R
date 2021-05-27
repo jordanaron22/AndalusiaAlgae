@@ -7,7 +7,6 @@
 #' @param mu_a mean negative binomial parameter
 #' @param k_a size negative binomial parameter
 #' @return Probability of observed algae
-#' @export
 ClassificationAlgae <- function(observed_val,latent_val,mu_a,k_a){
   if (is.na(latent_val)){
     return(1)
@@ -36,7 +35,6 @@ ClassificationAlgae <- function(observed_val,latent_val,mu_a,k_a){
 #' @param tox_em Classification matrix from ordinal regression parameters
 #' @importFrom stats dnbinom
 #' @return Probability of observed toxin
-#' @export
 ClassificationToxin <- function(observed_val,last_observed_val,latent_val,tox_em){
   if (is.na(latent_val)){
     return(1)
@@ -445,7 +443,6 @@ LogLikenbinom <- function(x,data,weights) {
 #' @param mu mean paramater
 #' @param phi other parameterization parameter
 #' @return Returns size paramaeter for negative binomial
-#' @export
 Phi2K <- function(mu,phi){
   return(1 / (((phi*mu) - mu) / mu^2))
 }
@@ -456,7 +453,6 @@ Phi2K <- function(mu,phi){
 #' @param mu mean paramater
 #' @param k_a size parameter
 #' @return Returns phi paramaeter for negative binomial
-#' @export
 K2Phi <- function(mu,k_a){
   return((mu + (mu^2/k_a)) / mu)
 }
@@ -637,7 +633,6 @@ CalcBetas <- function(algae_data,toxin_data,forw,backw,tran,mu_a,k,tox_em,denom,
 #' @param co2 Cutoff 1 for toxin data
 #' @param co3 Cutoff 1 for toxin data
 #' @return Returns discretized toxin data
-#' @export
 Cont2Ord <- function(toxin_data,co1,co2,co3){
   for (i in 1:length(toxin_data)){
     if (!is.na(toxin_data[i])){
@@ -722,7 +717,10 @@ GenerateSimulatedMC <- function(init, tran, toxin_data_len,mu_a,k,tox_em,missing
 #' @param threshold Threshold for algae data. Values lower than threshold are set to 0
 #' @return Returns initial probabilities
 #' @export
-RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsilon,states,toxin_states){
+RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsilon){
+  states <- c(0:1)
+  toxin_states <- c(0:3)
+
   algae_data <- replace(algae_data, algae_data < threshold,0)
   denom_vec <- numeric()
   like_decrease <- F
