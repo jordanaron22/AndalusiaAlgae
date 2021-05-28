@@ -1,0 +1,153 @@
+---
+title: "Algae Cleaning for CVS"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+messy_data <- read.csv2(file = "EverythingCSV.csv",header=T, stringsAsFactors=FALSE, fileEncoding="latin1")
+
+#######DSP 
+
+
+#Get Coquina Species
+coquina_inds <- messy_data[,3] == "Coquina"
+coquina_messy_data <- messy_data[coquina_inds,]
+#Get DSP toxins
+dsp_inds <- str_detect(coquina_messy_data[,15],regex("DSP",ignore_case = T))
+dsp_messy_data <- coquina_messy_data[dsp_inds,]
+#-16435 is number of days between Jan 1 1970 and Dec 31 2014
+#as.Date starts from Jan 1 1970
+#Now 1 corresponds to Jan 1 1015
+dsp_messy_data[,5] <- (sapply(dsp_messy_data[,5], as.Date, format = "%d-%m-%Y") + -16435)
+dsp_messy_data[,13] <- (sapply(dsp_messy_data[,13], as.Date, format = "%d-%m-%Y") + -16435)
+dsp_messy_data[,14] <- (sapply(dsp_messy_data[,14], as.Date, format = "%d-%m-%Y") + -16435)
+#Get rid of data before 2015
+#Numerical data starts in 2015 
+post_2015_inds <- dsp_messy_data[,5] > 0
+dsp_messy_data <- dsp_messy_data[post_2015_inds,]
+#Only keep AO because AZA and YTX are repeats
+ao_inds <- str_detect(dsp_messy_data[,18],regex("AO/kg",ignore_case = T))
+dsp_messy_data <- dsp_messy_data[ao_inds,]
+#replace , with . so int conversion works
+#replace <LC/<40 to 39 b/c limit of detection os 40
+#make results integers
+dsp_messy_data[,17] <- str_replace(dsp_messy_data[,17],",",".")
+dsp_messy_data[,17] <- str_replace(dsp_messy_data[,17],"< LC","39")
+dsp_messy_data[,17] <- str_replace(dsp_messy_data[,17],"< 40.00","39")
+dsp_messy_data[,17] <- as.integer(dsp_messy_data[,17])
+
+unique(cbind(dsp_messy_data[,1],dsp_messy_data[,2]))
+
+#Codigo in csv doesnt match up with Codigo in pdf
+#Use nombre b/c that matches up 
+#Assuming that Maritima de zonana is first half to both donana norte and donana sur
+dsp_matrix <- matrix(NA,8,max(dsp_messy_data[,5]))
+
+for (i in 1:dim(dsp_messy_data)[1]){
+  if (dsp_messy_data[i,2] == "Isla Canela" | dsp_messy_data[i,2] == "ISLA CANELA"){
+    dsp_matrix[1,dsp_messy_data[i,5]] <- as.integer(dsp_messy_data[i,17])
+  } else if (dsp_messy_data[i,2] == "Barra del Terrón"  | dsp_messy_data[i,2] == "BARRA DEL TERRON"){
+    dsp_matrix[2,dsp_messy_data[i,5]] <- as.integer(dsp_messy_data[i,17])
+  } else if (dsp_messy_data[i,2] == "Punta Umbría"  | dsp_messy_data[i,2] == "PUNTA UMBRIA"){
+    dsp_matrix[3,dsp_messy_data[i,5]] <- as.integer(dsp_messy_data[i,17])
+  } else if (dsp_messy_data[i,2] == "Desembocadura del Piedras"  | dsp_messy_data[i,2] == "DESEMBOCADURA DEL PIEDRAS"){
+    dsp_matrix[4,dsp_messy_data[i,5]] <- as.integer(dsp_messy_data[i,17])
+  } else if (dsp_messy_data[i,2] == "Mazagón"  | dsp_messy_data[i,2] == "MAZAGON"){
+    dsp_matrix[5,dsp_messy_data[i,5]] <- as.integer(dsp_messy_data[i,17])
+  } else if (dsp_messy_data[i,2] == "Matalascañas"  | dsp_messy_data[i,2] == "MATALASCAÑAS"){
+    dsp_matrix[6,dsp_messy_data[i,5]] <- as.integer(dsp_messy_data[i,17])
+  } 
+  if (dsp_messy_data[i,2] == "DOÑANA NORTE" | dsp_messy_data[i,2] == "Zona Marítima de Doñana"){
+    dsp_matrix[7,dsp_messy_data[i,5]] <- as.integer(dsp_messy_data[i,17])
+  } 
+  if (dsp_messy_data[i,2] == "DOÑANA SUR" | dsp_messy_data[i,2] == "Zona Marítima de Doñana"){
+    dsp_matrix[8,dsp_messy_data[i,5]] <- as.integer(dsp_messy_data[i,17])
+  } 
+}
+rownames(dsp_matrix) <- c("AND 01", "AND 02", "AND 03", "AND 04", "AND 05", "AND 06", "AND 07", "AND 08")
+
+###########Algas
+
+marine_water_inds <- messy_data[,3] ==  "Aguas marinas"
+marine_water_messy_data <- messy_data[marine_water_inds,]
+#-16435 is number of days between Jan 1 1970 and Dec 31 2014
+#as.Date starts from Jan 1 1970
+#Now 1 corresponds to Jan 1 1015
+marine_water_messy_data[,5] <- (sapply(marine_water_messy_data[,5], as.Date, format = "%d-%m-%Y") + -16435)
+marine_water_messy_data[,13] <- (sapply(marine_water_messy_data[,13], as.Date, format = "%d-%m-%Y") + -16435)
+marine_water_messy_data[,14] <- (sapply(marine_water_messy_data[,14], as.Date, format = "%d-%m-%Y") + -16435)
+#Get rid of data before 2015
+#Numerical data starts in 2015 
+post_2015_inds <- marine_water_messy_data[,5] > 0
+marine_water_messy_data <- marine_water_messy_data[post_2015_inds,]
+#Get rid of non dinophysis
+dino_inds <- str_detect(marine_water_messy_data[,16],regex("Dinophysis"))
+marine_water_messy_data <- marine_water_messy_data[dino_inds,]
+#replace , with . so int conversion works
+#replace <40 to 0
+#make results integers
+marine_water_messy_data[,17] <- str_replace(marine_water_messy_data[,17],",",".")
+marine_water_messy_data[,17] <- str_replace(marine_water_messy_data[,17],"< 40.00","0")
+marine_water_messy_data[,17] <- as.integer(marine_water_messy_data[,17])
+
+unique(cbind(marine_water_messy_data[,1],marine_water_messy_data[,2]))
+
+#Codigo in csv doesnt match up with Codigo in pdf
+#Use nombre b/c that matches up 
+#Assuming that Maritima de zonana is first half to both donana norte and donana sur
+#FIrst we have to collect all the different algae samples in an array
+#B/c there are different species of alg measured, there are often multiple measurements on the same day
+#We take the median of these measurmenets
+algae_matrix <- matrix(NA,8,max(marine_water_messy_data[,5]))
+algae_array <- array(NA,c(8,max(marine_water_messy_data[,5]),8))
+
+for (i in 1:dim(marine_water_messy_data)[1]){
+  if (marine_water_messy_data[i,2] == "Isla Canela" | marine_water_messy_data[i,2] == "ISLA CANELA"){
+    algae_array[1,marine_water_messy_data[i,5],which(is.na(algae_array[1,marine_water_messy_data[i,5],]))[1]] <- as.integer(marine_water_messy_data[i,17])
+  } else if (marine_water_messy_data[i,2] == "Barra del Terrón"  | marine_water_messy_data[i,2] == "BARRA DEL TERRON"){
+    algae_array[2,marine_water_messy_data[i,5],which(is.na(algae_array[2,marine_water_messy_data[i,5],]))[1]] <- as.integer(marine_water_messy_data[i,17])
+  } else if (marine_water_messy_data[i,2] == "Punta Umbría"  | marine_water_messy_data[i,2] == "PUNTA UMBRIA"){
+    algae_array[3,marine_water_messy_data[i,5],which(is.na(algae_array[3,marine_water_messy_data[i,5],]))[1]] <- as.integer(marine_water_messy_data[i,17])
+  } else if (marine_water_messy_data[i,2] == "Desembocadura del Piedras"  | marine_water_messy_data[i,2] == "DESEMBOCADURA DEL PIEDRAS"){
+    algae_array[4,marine_water_messy_data[i,5],which(is.na(algae_array[4,marine_water_messy_data[i,5],]))[1]] <- as.integer(marine_water_messy_data[i,17])
+  } else if (marine_water_messy_data[i,2] == "Mazagón"  | marine_water_messy_data[i,2] == "MAZAGON"){
+    algae_array[5,marine_water_messy_data[i,5],which(is.na(algae_array[5,marine_water_messy_data[i,5],]))[1]] <- as.integer(marine_water_messy_data[i,17])
+  } else if (marine_water_messy_data[i,2] == "Matalascañas"  | marine_water_messy_data[i,2] == "MATALASCAÑAS"){
+    algae_array[6,marine_water_messy_data[i,5],which(is.na(algae_array[6,marine_water_messy_data[i,5],]))[1]] <- as.integer(marine_water_messy_data[i,17])
+  }
+  if (marine_water_messy_data[i,2] == "DOÑANA NORTE" | marine_water_messy_data[i,2] == "Zona Marítima de Doñana"){
+    algae_array[7,marine_water_messy_data[i,5],which(is.na(algae_array[7,marine_water_messy_data[i,5],]))[1]] <- as.integer(marine_water_messy_data[i,17])
+  }
+  if (marine_water_messy_data[i,2] == "DOÑANA SUR" | marine_water_messy_data[i,2] == "Zona Marítima de Doñana"){
+    algae_array[8,marine_water_messy_data[i,5],which(is.na(algae_array[8,marine_water_messy_data[i,5],]))[1]] <- as.integer(marine_water_messy_data[i,17])
+  }
+}
+
+for (i in 1:dim(algae_matrix)[1]){
+  for (j in 1:dim(algae_matrix)[2]){
+    if (!is.na(algae_array[i,j,1])){
+      algae_matrix[i,j] <- median(algae_array[i,j,], na.rm = T)
+    }
+  }
+}
+algae_matrix <- cbind(algae_matrix,rep(NA,8))
+rownames(algae_matrix) <- c("AND 01", "AND 02", "AND 03", "AND 04", "AND 05", "AND 06", "AND 07", "AND 08")
+algae_matrix[is.nan(algae_matrix)] <- NA
+
+# new_algae_level <- c(algae_level,rep(NA,dim(algae_matrix)[2] - length(algae_level)))
+# View(cbind(algae_matrix[1,],new_algae_level))
+locations <- c("AND 01", "AND 02", "AND 03", "AND 04", "AND 05", "AND 06", "AND 07", "AND 08")
+for (i in 1:8){
+  algae_level <- algae_matrix[i,]
+  toxin_level <- dsp_matrix[i,]
+  
+  save(algae_level, file = paste0("EM/Coquina Donax trunculus/algae_level_Coquina Donax trunculus ",locations[i],".rda"))
+  save(toxin_level, file = paste0("EM/Coquina Donax trunculus/toxin_level_Coquina Donax trunculus ",locations[i],".rda"))
+}
+
+
+```
