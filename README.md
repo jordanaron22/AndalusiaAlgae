@@ -20,11 +20,12 @@ library(AndalusiaAlgaePackage)
 cell_counts <- F
 
 #Lmit of detection for algae counts
-#Set to 0 if algae count is binary
+#Set to 0 if algae count is binary, otherwise 40 is a common threshold to use
+#threshold <- 40
 threshold <- 0
 
 #Stopping threshold for EM
-epsilon <- 1
+epsilon <- .01
 
 #starting initial Markov state values
 init_true <- c(.75,.25)
