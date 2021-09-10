@@ -6,15 +6,21 @@
 #' @param latent_val Latent Markov state
 #' @param mu_a mean negative binomial parameter
 #' @param k_a size negative binomial parameter
+#' @param cell_counts T/F for using algae cell counts or binary
+#' @param bin_prob probability parameter for binomial
 #' @return Probability of observed algae
-ClassificationAlgae <- function(observed_val,latent_val,mu_a,k_a){
+ClassificationAlgae <- function(observed_val,latent_val,mu_a,k_a,cell_counts,bin_prob){
   if (is.na(latent_val)){
     return(1)
   } else if (is.na(observed_val)){
     return(1)
   } else {
     if (latent_val == 1){
-      return(dnbinom(observed_val,mu = mu_a, size = k_a))
+      if (cell_counts){
+        return(dnbinom(observed_val,mu = mu_a, size = k_a))
+      } else {
+        return(dbinom(observed_val,1,bin_prob))
+      }
     } else {
       if (observed_val == 0){
         return(1)
@@ -47,20 +53,20 @@ ClassificationToxin <- function(observed_val,last_observed_val,latent_val,tox_em
   }
 }
 
-ForwardLinearHelper <- function(old_alpha,alg_data,tox_data,last_tox,tran,mu_a,k_a,tox_em,states,toxin_states){
+ForwardLinearHelper <- function(old_alpha,alg_data,tox_data,last_tox,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob){
   pseudo_alpha_matrix <- numeric(length(states))
 
   for (new_mc in 1:length(states)){
     new_alpha <- numeric(length(states))
     for (last_mc in 1:length(states)){
-      new_alpha[last_mc] <- old_alpha[last_mc] + log(tran[last_mc,new_mc]) + log(ClassificationAlgae(alg_data,states[new_mc],mu_a,k_a)) + log(ClassificationToxin(tox_data,last_tox,states[new_mc],tox_em))
+      new_alpha[last_mc] <- old_alpha[last_mc] + log(tran[last_mc,new_mc]) + log(ClassificationAlgae(alg_data,states[new_mc],mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(tox_data,last_tox,states[new_mc],tox_em))
     }
     pseudo_alpha_matrix[new_mc] <- logSumExp(new_alpha)
   }
   return(pseudo_alpha_matrix)
 }
 
-ForwardLinearHelperMissing <- function(old_alpha_mat,alg_data,tox_data,tran,mu_a,k_a,tox_em,states,toxin_states){
+ForwardLinearHelperMissing <- function(old_alpha_mat,alg_data,tox_data,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob){
   pseudo_alpha_matrix <- numeric(length(states))
 
   for (new_mc in 1:length(states)){
@@ -69,7 +75,7 @@ ForwardLinearHelperMissing <- function(old_alpha_mat,alg_data,tox_data,tran,mu_a
       to_sum_toxin_vec <- numeric(length(toxin_states))
       for (last_tox in 1:length(toxin_states)){
         old_alpha <- old_alpha_mat[last_tox,]
-        to_sum_toxin_vec[last_tox] <- old_alpha[last_mc] + log(tran[last_mc,new_mc]) + log(ClassificationAlgae(alg_data,states[new_mc],mu_a,k_a)) + log(ClassificationToxin(tox_data,toxin_states[last_tox],states[new_mc],tox_em))
+        to_sum_toxin_vec[last_tox] <- old_alpha[last_mc] + log(tran[last_mc,new_mc]) + log(ClassificationAlgae(alg_data,states[new_mc],mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(tox_data,toxin_states[last_tox],states[new_mc],tox_em))
       }
       new_alpha[last_mc] <- logSumExp(to_sum_toxin_vec)
     }
@@ -89,9 +95,11 @@ ForwardLinearHelperMissing <- function(old_alpha_mat,alg_data,tox_data,tran,mu_a
 #' @param mu_a mean negative binomial parameter
 #' @param k_a size negative binomial parameter
 #' @param tox_em Classification matrix from ordinal regression parameters
+#' @param cell_counts T/F for using algae cell counts or binary
+#' @param bin_prob probability parameter for binomial
 #' @return Return forward probabilities from day 1 to day time(variable name)
 #' @export
-ForwardLinear <- function(algae_data, toxin_data,time,init,tran,mu_a,k_a,tox_em,states,toxin_states){
+ForwardLinear <- function(algae_data, toxin_data,time,init,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob){
   alpha_matrix<-vector("list",time)
   alpha_i <- numeric(length(states))
 
@@ -109,12 +117,12 @@ ForwardLinear <- function(algae_data, toxin_data,time,init,tran,mu_a,k_a,tox_em,
   #ASSUME OBS TOX AT TIME 1 IS 0
   if (!is.na(toxin_data[1])){
     for (j in 1:length(states)){
-      alpha_matrix[[1]][[1]][[j]] <- log(init[j]) + log(ClassificationAlgae(algae_data[1],states[j],mu_a,k_a)) + log(ClassificationToxin(toxin_data[1],0,states[j],tox_em))
+      alpha_matrix[[1]][[1]][[j]] <- log(init[j]) + log(ClassificationAlgae(algae_data[1],states[j],mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(toxin_data[1],0,states[j],tox_em))
     }
   } else {
     for (j in 1:length(toxin_states)){
       for (i in 1:length(states)){
-        alpha_matrix[[1]][[j]][[i]] <- log(init[i]) + log(ClassificationAlgae(algae_data[1],states[i],mu_a,k_a)) + log(ClassificationToxin(toxin_states[j],0,states[i],tox_em))
+        alpha_matrix[[1]][[j]][[i]] <- log(init[i]) + log(ClassificationAlgae(algae_data[1],states[i],mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(toxin_states[j],0,states[i],tox_em))
       }
     }
   }
@@ -125,10 +133,10 @@ ForwardLinear <- function(algae_data, toxin_data,time,init,tran,mu_a,k_a,tox_em,
         old_alpha <- alpha_matrix[[i-1]][[1]]
         old_alpha_mat <- NA
         if (!is.na(toxin_data[i])){
-          alpha_matrix[[i]][[1]] <- ForwardLinearHelper(old_alpha,algae_data[i],toxin_data[i],toxin_data[i-1],tran,mu_a,k_a,tox_em,states,toxin_states)
+          alpha_matrix[[i]][[1]] <- ForwardLinearHelper(old_alpha,algae_data[i],toxin_data[i],toxin_data[i-1],tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
         } else {
           for (curr_tox_states in 1:length(toxin_states)){
-            alpha_matrix[[i]][[curr_tox_states]] <- ForwardLinearHelper(old_alpha,algae_data[i],toxin_states[curr_tox_states],toxin_data[i-1],tran,mu_a,k_a,tox_em,states,toxin_states)
+            alpha_matrix[[i]][[curr_tox_states]] <- ForwardLinearHelper(old_alpha,algae_data[i],toxin_states[curr_tox_states],toxin_data[i-1],tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
           }
         }
 
@@ -139,10 +147,10 @@ ForwardLinear <- function(algae_data, toxin_data,time,init,tran,mu_a,k_a,tox_em,
         }
         old_alpha <- NA
         if (!is.na(toxin_data[i])){
-          alpha_matrix[[i]][[1]] <- ForwardLinearHelperMissing(old_alpha_mat,algae_data[i],toxin_data[i],tran,mu_a,k_a,tox_em,states,toxin_states)
+          alpha_matrix[[i]][[1]] <- ForwardLinearHelperMissing(old_alpha_mat,algae_data[i],toxin_data[i],tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
         } else if (is.na(toxin_data[i])){
           for (curr_tox_states in 1:length(toxin_states)){
-            alpha_matrix[[i]][[curr_tox_states]] <- ForwardLinearHelperMissing(old_alpha_mat,algae_data[i],toxin_states[curr_tox_states],tran,mu_a,k_a,tox_em,states,toxin_states)
+            alpha_matrix[[i]][[curr_tox_states]] <- ForwardLinearHelperMissing(old_alpha_mat,algae_data[i],toxin_states[curr_tox_states],tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
           }
         }
       }
@@ -162,9 +170,11 @@ ForwardLinear <- function(algae_data, toxin_data,time,init,tran,mu_a,k_a,tox_em,
 #' @param mu_a mean negative binomial parameter
 #' @param k_a size negative binomial parameter
 #' @param tox_em Classification matrix from ordinal regression parameters
+#' @param cell_counts T/F for using algae cell counts or binary
+#' @param bin_prob probability parameter for binomial
 #' @return Return backward probabilities from day time to end of data
 #' @export
-BackwardLinear <- function(algae_data,toxin_data,time,tran,mu_a,k_a,tox_em,states,toxin_states){
+BackwardLinear <- function(algae_data,toxin_data,time,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob){
 
   beta_i <- numeric(length(states))
   beta_matrix <- vector("list",length(algae_data))
@@ -190,16 +200,16 @@ BackwardLinear <- function(algae_data,toxin_data,time,tran,mu_a,k_a,tox_em,state
     for (i in (length(algae_data)-1):time){
       if (!is.na(toxin_data[i])){
         if (!is.na(toxin_data[i+1])){
-          beta_matrix[[i]][[1]] <- BackwardLinearHelper(beta_matrix[[i+1]],algae_data[i+1],toxin_data[i+1],toxin_data[i],tran,mu_a,k_a,tox_em,states,toxin_states)
+          beta_matrix[[i]][[1]] <- BackwardLinearHelper(beta_matrix[[i+1]],algae_data[i+1],toxin_data[i+1],toxin_data[i],tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
         } else {
-          beta_matrix[[i]][[1]] <- BackwardLinearHelperMissing(beta_matrix[[i+1]],algae_data[i+1],toxin_data[i],tran,mu_a,k_a,tox_em,states,toxin_states)
+          beta_matrix[[i]][[1]] <- BackwardLinearHelperMissing(beta_matrix[[i+1]],algae_data[i+1],toxin_data[i],tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
         }
       } else {
         for (j in 1:length(toxin_states)){
           if (!is.na(toxin_data[i+1])){
-            beta_matrix[[i]][[j]] <- BackwardLinearHelper(beta_matrix[[i+1]],algae_data[i+1],toxin_data[i+1],toxin_states[j],tran,mu_a,k_a,tox_em,states,toxin_states)
+            beta_matrix[[i]][[j]] <- BackwardLinearHelper(beta_matrix[[i+1]],algae_data[i+1],toxin_data[i+1],toxin_states[j],tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
           } else {
-            beta_matrix[[i]][[j]] <- BackwardLinearHelperMissing(beta_matrix[[i+1]],algae_data[i+1],toxin_states[j],tran,mu_a,k_a,tox_em,states,toxin_states)
+            beta_matrix[[i]][[j]] <- BackwardLinearHelperMissing(beta_matrix[[i+1]],algae_data[i+1],toxin_states[j],tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
           }
         }
       }
@@ -210,14 +220,14 @@ BackwardLinear <- function(algae_data,toxin_data,time,tran,mu_a,k_a,tox_em,state
   return(beta_matrix)
 }
 
-BackwardLinearHelper <- function(new_beta,alg_data,tox_data,obs_tox,tran,mu_a,k_a,tox_em,states,toxin_states){
+BackwardLinearHelper <- function(new_beta,alg_data,tox_data,obs_tox,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob){
   new_beta <- new_beta[[1]]
   pseudo_beta_matrix <- numeric(length(states))
 
   for (j in 1:length(states)){
     log_beta <- numeric(length(states))
     for (j_2 in 1:length(states)){
-      log_beta[j_2] <-  new_beta[j_2] + log(tran[j,j_2]) + log(ClassificationAlgae(alg_data,states[j_2],mu_a,k_a)) + log(ClassificationToxin(tox_data,obs_tox,states[j_2],tox_em))
+      log_beta[j_2] <-  new_beta[j_2] + log(tran[j,j_2]) + log(ClassificationAlgae(alg_data,states[j_2],mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(tox_data,obs_tox,states[j_2],tox_em))
     }
 
     pseudo_beta_matrix[j] <- logSumExp(log_beta)
@@ -225,7 +235,7 @@ BackwardLinearHelper <- function(new_beta,alg_data,tox_data,obs_tox,tran,mu_a,k_
   return(pseudo_beta_matrix)
 }
 
-BackwardLinearHelperMissing <- function(new_beta,alg_data,obs_tox,tran,mu_a,k_a,tox_em,states,toxin_states){
+BackwardLinearHelperMissing <- function(new_beta,alg_data,obs_tox,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob){
   pseudo_beta_matrix <- numeric(length(states))
   new_beta_mat <- matrix(0,length(toxin_states),length(states))
 
@@ -240,7 +250,7 @@ BackwardLinearHelperMissing <- function(new_beta,alg_data,obs_tox,tran,mu_a,k_a,
     for (j_2 in 1:length(states)){
       log_beta_vec <- numeric(length(toxin_states))
       for (k_1 in 1:length(toxin_states)){
-        log_beta_vec[k_1] <- new_beta_mat[k_1,j_2] + log(tran[j,j_2]) + log(ClassificationAlgae(alg_data,states[j_2],mu_a,k_a)) + log(ClassificationToxin(toxin_states[k_1],obs_tox,states[j_2],tox_em))
+        log_beta_vec[k_1] <- new_beta_mat[k_1,j_2] + log(tran[j,j_2]) + log(ClassificationAlgae(alg_data,states[j_2],mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(toxin_states[k_1],obs_tox,states[j_2],tox_em))
       }
       log_beta[j_2] <- logSumExp(log_beta_vec)
     }
@@ -321,9 +331,11 @@ CalcInit <- function(forw,backw,states,toxin_states){
 #' @param mu_a mean negative binomial parameter
 #' @param k_a size negative binomial parameter
 #' @param tox_em Classification matrix from ordinal regression parameters
+#' @param cell_counts T/F for using algae cell counts or binary
+#' @param bin_prob probability parameter for binomial
 #' @return Returns initial probabilities
 #' @export
-CalcTran <- function(forw,backw,tran,algae_data,toxin_data,mu_a,k_a,tox_em,states,toxin_states){
+CalcTran <- function(forw,backw,tran,algae_data,toxin_data,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob){
   tran_matrix_current <- array(NA,c(length(states),length(states),length(algae_data)-1,length(toxin_states),length(toxin_states)))
 
   for (time in 2:length(algae_data)){
@@ -337,13 +349,13 @@ CalcTran <- function(forw,backw,tran,algae_data,toxin_data,mu_a,k_a,tox_em,state
             forw_prob <- CollapseForw(forw,time-1,states,toxin_states)
             backw_prob <- CollapseBackw(backw,time,states,toxin_states)
             tran_matrix_current[initial_state,new_state,time-1,1,1] <- forw_prob[initial_state] + backw_prob[new_state] + log(tran[initial_state,new_state]) +
-              log(ClassificationAlgae(algae_data[time],new_state - 1,mu_a,k_a)) + log(ClassificationToxin(toxin_data[time],toxin_data[time-1],new_state - 1,tox_em))
+              log(ClassificationAlgae(algae_data[time],new_state - 1,mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(toxin_data[time],toxin_data[time-1],new_state - 1,tox_em))
           } else {
             forw_prob <- CollapseForw(forw,time-1,states,toxin_states)
             for (curr_tox in 1:length(toxin_states)){
               backw_prob <- backw[[time]][[curr_tox]]
               tran_matrix_current[initial_state,new_state,time-1,1,curr_tox] <- forw_prob[initial_state] + backw_prob[new_state] + log(tran[initial_state,new_state]) +
-                log(ClassificationAlgae(algae_data[time],new_state - 1,mu_a,k_a)) + log(ClassificationToxin(toxin_states[curr_tox],toxin_data[time-1],new_state - 1,tox_em))
+                log(ClassificationAlgae(algae_data[time],new_state - 1,mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(toxin_states[curr_tox],toxin_data[time-1],new_state - 1,tox_em))
             }
           }
         } else {
@@ -352,7 +364,7 @@ CalcTran <- function(forw,backw,tran,algae_data,toxin_data,mu_a,k_a,tox_em,state
             for(last_tox in 1:length(toxin_states)){
               forw_prob <- forw[[time-1]][[last_tox]]
               tran_matrix_current[initial_state,new_state,time-1,last_tox,1] <- forw_prob[initial_state] + backw_prob[new_state] + log(tran[initial_state,new_state]) +
-                log(ClassificationAlgae(algae_data[time],new_state - 1,mu_a,k_a)) + log(ClassificationToxin(toxin_data[time],toxin_states[last_tox],new_state - 1,tox_em))
+                log(ClassificationAlgae(algae_data[time],new_state - 1,mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(toxin_data[time],toxin_states[last_tox],new_state - 1,tox_em))
             }
           } else {
             for (last_tox in 1:length(toxin_states)){
@@ -360,7 +372,7 @@ CalcTran <- function(forw,backw,tran,algae_data,toxin_data,mu_a,k_a,tox_em,state
                 forw_prob <- forw[[time-1]][[last_tox]]
                 backw_prob <- backw[[time]][[curr_tox]]
                 tran_matrix_current[initial_state,new_state,time-1,last_tox,curr_tox] <- forw_prob[initial_state] + backw_prob[new_state] + log(tran[initial_state,new_state]) +
-                  log(ClassificationAlgae(algae_data[time],new_state - 1,mu_a,k_a)) + log(ClassificationToxin(toxin_states[curr_tox],toxin_states[last_tox],new_state - 1,tox_em))
+                  log(ClassificationAlgae(algae_data[time],new_state - 1,mu_a,k_a,cell_counts,bin_prob)) + log(ClassificationToxin(toxin_states[curr_tox],toxin_states[last_tox],new_state - 1,tox_em))
               }
             }
           }
@@ -417,20 +429,33 @@ ProbWeights <- function(data, forw,backw,states,toxin_states){
 
 #' Calculates log likelihood of negative binomial for algae data
 #'
-#' @param x vector of mean and size parameter
+#' @param x vector of (mean and size) or probability parameter
 #' @param data Algae data to calculate likelihood of
 #' @param weights Weights from previous function ProbWeights
+#' @param cell_counts T/F for using algae cell counts or binary
 #' @return Returns log likelihood for negative binomial of algae data
 #' @export
-LogLikenbinom <- function(x,data,weights) {
+LogLikenbinom <- function(x,data,weights,cell_counts) {
   rs <- 0
   for (i in 1:length(data)){
     if (!is.na(data[i])){
-      if (!is.na(log(dnbinom(data[i], mu = x[1], size = x[2])))){
-        rs <- rs + (weights[i] *  log(dnbinom(data[i], mu = x[1], size = x[2])))
-      } else {
-        return(-Inf)
+      
+      if (cell_counts){
+        if (!is.na(log(dnbinom(data[i], mu = x[1], size = x[2])))){
+          rs <- rs + (weights[i] *  log(dnbinom(data[i], mu = x[1], size = x[2])))
+        } else {
+          return(-Inf)
+        }
       }
+      
+      if (!cell_counts){
+        if (!is.na(log(dbinom(data[i], size = 1,prob = x[1])))){
+          rs <- rs + (weights[i] *  log(dbinom(data[i], size = 1,prob = x[1])))
+        } else {
+          return(-Inf)
+        }
+      }
+      
     }
   }
   return(-rs)
@@ -510,10 +535,12 @@ Ord2Mat <- function(coeffs, zetas,states,toxin_states){
 #' @param k size negative binomial parameter
 #' @param tox_em Classification matrix from ordinal regression parameters
 #' @param denom Denominator used in expected value calculations, total likelihood of all data
+#' @param cell_counts T/F for using algae cell counts or binary
+#' @param bin_prob probability parameter for binomial
 #' @return Returns betas for ordinal logistic regression
 #' @import MASS
 #' @export
-CalcBetas <- function(algae_data,toxin_data,forw,backw,tran,mu_a,k,tox_em,denom,states,toxin_states){
+CalcBetas <- function(algae_data,toxin_data,forw,backw,tran,mu_a,k,tox_em,denom,states,toxin_states,cell_counts,bin_prob){
   ord_log_df <- data.frame("current_toxin"=integer(),
                            "last_toxin"=integer(),
                            "Markov_chain" = integer(),
@@ -523,13 +550,13 @@ CalcBetas <- function(algae_data,toxin_data,forw,backw,tran,mu_a,k,tox_em,denom,
 
   QuantCalcMissing <- function(curr_time,last_toxin,curr_toxin,curr_algae,last_mc,curr_mc,tran,mu_a,k,tox_em){
     return(forw[[curr_time-1]][[last_toxin+1]][last_mc+1] + log(tran[last_mc+1,curr_mc+1]) +
-             log(ClassificationAlgae(curr_algae,curr_mc,mu_a,k)) + log(ClassificationToxin(curr_toxin,last_toxin,curr_mc,tox_em)) +
+             log(ClassificationAlgae(curr_algae,curr_mc,mu_a,k,cell_counts,bin_prob)) + log(ClassificationToxin(curr_toxin,last_toxin,curr_mc,tox_em)) +
              backw[[curr_time]][[1]][curr_mc+1])
   }
 
   QuantCalcCompletelyMissing <- function(curr_time,last_toxin,curr_toxin,curr_algae,last_mc,curr_mc,tran,mu_a,k,tox_em){
     return(forw[[curr_time-1]][[last_toxin+1]][last_mc+1] + log(tran[last_mc+1,curr_mc+1]) +
-             log(ClassificationAlgae(curr_algae,curr_mc,mu_a,k)) + log(ClassificationToxin(curr_toxin,last_toxin,curr_mc,tox_em)) +
+             log(ClassificationAlgae(curr_algae,curr_mc,mu_a,k,cell_counts,bin_prob)) + log(ClassificationToxin(curr_toxin,last_toxin,curr_mc,tox_em)) +
              backw[[curr_time]][[curr_toxin+1]][curr_mc+1])
   }
 
@@ -659,10 +686,12 @@ Cont2Ord <- function(toxin_data,co1,co2,co3){
 #' @param k size negative binomial parameter
 #' @param tox_em Classification matrix from ordinal regression parameters
 #' @param missing_perc Percent of data to remove from simulated data
+#' @param cell_counts T/F for using algae cell counts or binary
+#' @param bin_prob probability parameter for binomial
 #' @return Returns simulated data
 #' @import stats
 #' @export
-GenerateSimulatedMC <- function(init, tran, toxin_data_len,mu_a,k,tox_em,missing_perc){
+GenerateSimulatedMC <- function(init, tran, toxin_data_len,mu_a,k,tox_em,missing_perc,cell_counts,bin_prob){
   sim_markov_chain <- numeric(toxin_data_len)
   sim_toxin_data <- numeric(toxin_data_len)
   sim_algae_data <- numeric(toxin_data_len)
@@ -670,14 +699,23 @@ GenerateSimulatedMC <- function(init, tran, toxin_data_len,mu_a,k,tox_em,missing
   sim_markov_chain[1] <- which(rmultinom(1,1,init) == 1) - 1
   sim_toxin_data[1] <- which(rmultinom(1,1,tox_em[1,,sim_markov_chain[1]+1]) == 1) - 1
   if (sim_markov_chain[1] == 1){
-    sim_algae_data[1] <- rnbinom(1,mu = mu_a, size = k)
+    if (cell_counts){
+      sim_algae_data[1] <- rnbinom(1,mu = mu_a, size = k)
+    } else{
+      sim_algae_data[1] <- rbinom(1,prob = bin_prob, size = 1)
+    }
   }
 
   for (i in 2:toxin_data_len){
     sim_markov_chain[i] <- which(rmultinom(1,1,tran[sim_markov_chain[i-1]+1,]) == 1) - 1
     sim_toxin_data[i] <- which(rmultinom(1,1,tox_em[sim_toxin_data[i-1]+1,,sim_markov_chain[i]+1]) == 1) - 1
     if (sim_markov_chain[i] == 1){
-      sim_algae_data[i] <- rnbinom(1,mu = mu_a, size = k)
+      if (cell_counts){
+        sim_algae_data[i] <- rnbinom(1,mu = mu_a, size = k)
+      } else{
+        sim_algae_data[i] <- rbinom(1,prob = bin_prob, size = 1)
+        
+      }
     }
   }
 
@@ -715,56 +753,69 @@ GenerateSimulatedMC <- function(init, tran, toxin_data_len,mu_a,k,tox_em,missing
 #' @param k_a size negative binomial parameter
 #' @param betas Ordinal logistic regression coefficients
 #' @param threshold Threshold for algae data. Values lower than threshold are set to 0
+#' @param cell_counts T/F for using algae cell counts or binary
+#' @param bin_prob probability parameter for binomial
 #' @return Returns initial probabilities
 #' @export
-RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsilon){
+RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsilon, cell_counts,bin_prob){
 
   states <- c(0:1)
   toxin_states <- c(0:3)
-
+  if (!cell_counts){threshold <- 0}
   algae_data <- replace(algae_data, algae_data < threshold,0)
   denom_vec <- numeric()
   like_decrease <- F
   last_denom <- -Inf
   tox_em <- Ord2Mat(betas[[1]],betas[[2]],states,toxin_states)
-  forw <- ForwardLinear(algae_data,toxin_data,length(algae_data),init,tran,mu_a,k_a,tox_em,states,toxin_states)
-  backw <- BackwardLinear(algae_data,toxin_data,1,tran,mu_a,k_a,tox_em,states,toxin_states)
+  forw <- ForwardLinear(algae_data,toxin_data,length(algae_data),init,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
+  backw <- BackwardLinear(algae_data,toxin_data,1,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
   denom <- logSumExp(CollapseForw(forw,length(forw),states,toxin_states))
   init <- exp(CalcInit(forw,backw,states,toxin_states))
-  tran <- CalcTran(forw,backw,tran, algae_data,toxin_data,mu_a,k_a,tox_em,states,toxin_states)
+  tran <- CalcTran(forw,backw,tran, algae_data,toxin_data,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
 
-  betas <- CalcBetas(algae_data,toxin_data,forw,backw,tran,mu_a,k_a,tox_em,denom,states,toxin_states)
+  betas <- CalcBetas(algae_data,toxin_data,forw,backw,tran,mu_a,k_a,tox_em,denom,states,toxin_states,cell_counts,bin_prob)
   tox_em <- Ord2Mat(betas[[1]],betas[[2]],states,toxin_states)
 
   weights <- ProbWeights(algae_data,forw,backw,states,toxin_states)
-  nbin_par <- suppressWarnings(optim(c(mu_a,k_a), LogLikenbinom, data = algae_data, weights = weights)$par)
-  mu_a <- nbin_par[1]
-  k_a <- nbin_par[2]
+  if (cell_counts){
+    nbin_par <- suppressWarnings(optim(c(mu_a,k_a), LogLikenbinom, data = algae_data, weights = weights, cell_counts = cell_counts, bin_prob = bin_prob)$par)
+    mu_a <- nbin_par[1]
+    k_a <- nbin_par[2]
+  } else {
+    nbin_par <- suppressWarnings(optim(c(bin_prob), LogLikenbinom, data = algae_data, weights = weights, cell_counts = cell_counts)$par)
+    bin_prob <- nbin_par[1]
+  }
+    
 
-  forw <- ForwardLinear(algae_data,toxin_data,length(algae_data),init,tran,mu_a,k_a,tox_em,states,toxin_states)
-  backw <- BackwardLinear(algae_data,toxin_data,1,tran,mu_a,k_a,tox_em,states,toxin_states)
+  forw <- ForwardLinear(algae_data,toxin_data,length(algae_data),init,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
+  backw <- BackwardLinear(algae_data,toxin_data,1,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
   new_denom <- logSumExp(CollapseForw(forw,length(forw),states,toxin_states))
   print(new_denom - denom)
   while ((new_denom - denom) > epsilon){
     denom <- new_denom
     init <- exp(CalcInit(forw,backw,states,toxin_states))
-    tran <- CalcTran(forw,backw,tran, algae_data,toxin_data,mu_a,k_a,tox_em,states,toxin_states)
-    betas <- CalcBetas(algae_data,toxin_data,forw,backw,tran,mu_a,k_a,tox_em,denom,states,toxin_states)
+    tran <- CalcTran(forw,backw,tran, algae_data,toxin_data,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
+    betas <- CalcBetas(algae_data,toxin_data,forw,backw,tran,mu_a,k_a,tox_em,denom,states,toxin_states,cell_counts,bin_prob)
     tox_em <- Ord2Mat(betas[[1]],betas[[2]],states,toxin_states)
 
     weights <- ProbWeights(algae_data,forw,backw,states,toxin_states)
-    nbin_par <- suppressWarnings(optim(c(mu_a,k_a), LogLikenbinom, data = algae_data, weights = weights)$par)
-    mu_a <- nbin_par[1]
-    k_a <- nbin_par[2]
+    if (cell_counts){
+      nbin_par <- suppressWarnings(optim(c(mu_a,k_a), LogLikenbinom, data = algae_data, weights = weights, cell_counts = cell_counts, bin_prob = bin_prob)$par)
+      mu_a <- nbin_par[1]
+      k_a <- nbin_par[2]
+    } else {
+      nbin_par <- suppressWarnings(optim(c(bin_prob), LogLikenbinom, data = algae_data, weights = weights, cell_counts = cell_counts)$par)
+      bin_prob <- nbin_par[1]
+    }
 
-    forw <- ForwardLinear(algae_data,toxin_data,length(algae_data),init,tran,mu_a,k_a,tox_em,states,toxin_states)
-    backw <- BackwardLinear(algae_data,toxin_data,1,tran,mu_a,k_a,tox_em,states,toxin_states)
+    forw <- ForwardLinear(algae_data,toxin_data,length(algae_data),init,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
+    backw <- BackwardLinear(algae_data,toxin_data,1,tran,mu_a,k_a,tox_em,states,toxin_states,cell_counts,bin_prob)
     new_denom <- logSumExp(CollapseForw(forw,length(forw),states,toxin_states))
     print(new_denom - denom)
     denom_vec <- c(denom_vec,new_denom)
   }
 
-  estimated_parameters <- list(init, tran, mu_a, k_a, betas)
+  estimated_parameters <- list(init, tran, mu_a, k_a, bin_prob, betas)
   return(estimated_parameters)
 }
 
@@ -777,15 +828,17 @@ RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsil
 #' @param betas_true Betas for simulated data
 #' @param missing_perc Percent of data to remove from simulated data
 #' @param data_len Number of days to simulate
+#' @param cell_counts T/F for using algae cell counts or binary
+#' @param bin_prob probability parameter for binomial
 #' @return Returns simulated data
 #' @export
-SimData <- function(init_true,tran_true,mu_a_true,k_true,betas_true,missing_perc,data_len){
+SimData <- function(init_true,tran_true,mu_a_true,k_true,betas_true,missing_perc,data_len,cell_counts,bin_prob){
   states <- c(0:1)
   toxin_states <- c(0:3)
 
   tox_em_true <- Ord2Mat(betas_true[[1]],betas_true[[2]],states,toxin_states)
 
-  algae_tox_dfs <- GenerateSimulatedMC(init_true,tran_true,data_len,mu_a_true,k_true,tox_em_true,missing_perc)
+  algae_tox_dfs <- GenerateSimulatedMC(init_true,tran_true,data_len,mu_a_true,k_true,tox_em_true,missing_perc,cell_counts,bin_prob)
   algae_toxin_sim_true_df <-algae_tox_dfs[[1]]
   algae_toxin_sim_obs_df <- algae_tox_dfs[[2]]
 
