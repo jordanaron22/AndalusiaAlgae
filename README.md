@@ -15,11 +15,16 @@ library(AndalusiaAlgaePackage)
 ## Simulated Data
 
 ```{r}
-#Threshold for algae counts
+#Is algae data in cell/liter, then set to true
+#Is algae data binary absence/presence, then set to false
+cell_counts <- F
+
+#Lmit of detection for algae counts
+#Set to 0 if algae count is binary
 threshold <- 0
 
 #Stopping threshold for EM
-epsilon <- .001
+epsilon <- 1
 
 #starting initial Markov state values
 init_true <- c(.75,.25)
@@ -27,13 +32,16 @@ init_true <- c(.75,.25)
 #starting Markov transition probabilities
 tran_true <- matrix(c(.60,.40,
                       .20,.80), 2,2, byrow = T)
-                      
+
 #starting mean paramater for negative binomial
 mu_a_true <- 64
 
 
 #starting size paramater for negative binomial
 k_true <- 0.25
+
+#starting probability parameter for binomial
+bin_prob_true <- .7
 
 #starting regression coefficients for ordinal logistic regression
 #first grouping is for effects of last DST state and current Markov state, respectivly
@@ -48,7 +56,7 @@ missing_perc <- .3
 sample_size <- 2000
 
 #Creates simulated data and organizes it
-simulated_data <- SimData(init_true,tran_true,mu_a_true,k_true,betas_true,missing_perc,sample_size)
+simulated_data <- SimData(init_true,tran_true,mu_a_true,k_true,betas_true,missing_perc,sample_size,cell_counts,bin_prob_true)
 algae_data <- simulated_data[[1]]
 toxin_data <- simulated_data[[2]]
 ###################################
@@ -64,14 +72,15 @@ toxin_data <- simulated_data[[2]]
 
 est_param <- RunEM(algae_data,toxin_data,
                    init_true,tran_true,mu_a_true,k_true,betas_true,
-                   threshold,epsilon)
-                   
+                   threshold,epsilon,cell_counts,bin_prob_true)
+
 #Output est_param is a list of lists
 #est_param[[1]] are the estimated initial Markov state values
 #est_param[[2]] are the estimated Markov transition probabilities
 #est_param[[3]] is the estimated mean paramater for negative binomial
 #est_param[[4]] is the estimated size paramater for negative binomial
-#est_param[[5]][[1]][[1]] is the estimated regression effect from previous DST state on current DST state 
-#est_param[[5]][[1]][[2]] is the estimated regression effect from current Markov state on current DST state 
-#est_param[[5]][[2]] are the estimated intercept coefficients
+#est_param[[5]] is the estimated probability parameter for the binomial
+#est_param[[6]][[1]][[1]] is the estimated regression effect from previous DST state on current DST state 
+#est_param[[6]][[1]][[2]] is the estimated regression effect from current Markov state on current DST state 
+#est_param[[6]][[2]] are the estimated intercept coefficients
 ```
