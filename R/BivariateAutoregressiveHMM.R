@@ -778,7 +778,7 @@ RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsil
 
   weights <- ProbWeights(algae_data,forw,backw,states,toxin_states)
   if (cell_counts){
-    nbin_par <- suppressWarnings(optim(c(mu_a,k_a), LogLikenbinom, data = algae_data, weights = weights, cell_counts = cell_counts, bin_prob = bin_prob)$par)
+    nbin_par <- suppressWarnings(optim(c(mu_a,k_a), LogLikenbinom, data = algae_data, weights = weights, cell_counts = cell_counts)$par)
     mu_a <- nbin_par[1]
     k_a <- nbin_par[2]
   } else {
@@ -800,7 +800,7 @@ RunEM <- function(algae_data,toxin_data,init,tran,mu_a,k_a,betas,threshold,epsil
 
     weights <- ProbWeights(algae_data,forw,backw,states,toxin_states)
     if (cell_counts){
-      nbin_par <- suppressWarnings(optim(c(mu_a,k_a), LogLikenbinom, data = algae_data, weights = weights, cell_counts = cell_counts, bin_prob = bin_prob)$par)
+      nbin_par <- suppressWarnings(optim(c(mu_a,k_a), LogLikenbinom, data = algae_data, weights = weights, cell_counts = cell_counts)$par)
       mu_a <- nbin_par[1]
       k_a <- nbin_par[2]
     } else {
