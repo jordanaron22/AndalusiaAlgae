@@ -80,7 +80,7 @@ cell_counts <- T
 threshold <- 0
 
 #Stopping threshold for EM
-epsilon <- 1
+epsilon <- .01
 
 #starting initial Markov state values
 init_true <- c(.75,.25)
@@ -153,13 +153,17 @@ init <- est_param[[1]]
 tran <- est_param[[2]]
 mu_a <- est_param[[3]]
 k_a <- est_param[[4]]
-bin_pron <- est_param[[5]]
+bin_prob <- est_param[[5]]
 mc_coef <- est_param[[6]][[1]]
 inter_coef <- est_param[[6]][[2]]
 
-PosteriorDecoding <- function(algae_data, toxin_data, est_param,mc_coef,inter_coef){
+PosteriorDecoding <- function(algae_data, toxin_data, est_param){
   states <- c(0:1)
   toxin_states <- c(0:3)
+  
+  mc_coef <- est_param[[6]][[1]]
+  inter_coef <- est_param[[6]][[2]]
+  
   tox_em <- Ord2Mat(mc_coef,inter_coef,states,toxin_states)
   
   forw <- ForwardLinear(algae_data,toxin_data,sample_size,est_param[[1]],est_param[[2]],est_param[[3]],est_param[[4]],tox_em,states,toxin_states,cell_counts = T,est_param[[5]])
@@ -173,38 +177,52 @@ PosteriorDecoding <- function(algae_data, toxin_data, est_param,mc_coef,inter_co
   return(posterior_decode)
 }
 
-posterior_decode <- PosteriorDecoding(algae_data, toxin_data, est_param,mc_coef,inter_coef)
+Viterbi <- function(algae_data,toxin_data,est_param){
+  init <- est_param[[1]]
+  tran <- est_param[[2]]
+  mu_a <- est_param[[3]]
+  k_a <- est_param[[4]]
+  bin_prob <- est_param[[5]]
+  mc_coef <- est_param[[6]][[1]]
+  inter_coef <- est_param[[6]][[2]]
   
-
-states <- c(0:1)
-toxin_states <- c(0:3)
-tox_em <- Ord2Mat(mc_coef,inter_coef,states,toxin_states)
-
-viterbi_mat <- matrix(NA,2,sample_size)
-
-viterbi_mat[1,1] <- log(init_true[1]) + 
-  log(ClassificationAlgae(algae_data[1],0,mu_a,k_a,T,.7)) + 
-  log(ClassificationToxin(toxin_data[1],toxin_data[1],0,tox_em))
-
-viterbi_mat[2,1] <- log(init_true[2]) + 
-  log(ClassificationAlgae(algae_data[1],1,mu_a,k_a,T,.7)) + 
-  log(ClassificationToxin(toxin_data[1],toxin_data[1],1,tox_em))
-
-
-for (time in 2:sample_size){
-  viterbi_mat[1,time] <- log(ClassificationAlgae(algae_data[time],0,mu_a,k_a,T,.7)) + 
-    log(ClassificationToxin(toxin_data[time],toxin_data[time-1],0,tox_em)) + 
-    max(viterbi_mat[1,time-1] + log(tran_true[1,1]),
-        viterbi_mat[2,time-1] + log(tran_true[2,1]))
+  states <- c(0:1)
+  toxin_states <- c(0:3)
+  tox_em <- Ord2Mat(mc_coef,inter_coef,states,toxin_states)
+  
+  viterbi_mat <- matrix(NA,2,length(algae_data))
+  
+  viterbi_mat[1,1] <- log(init[1]) + 
+    log(ClassificationAlgae(algae_data[1],0,mu_a,k_a,T,bin_prob)) + 
+    log(ClassificationToxin(toxin_data[1],toxin_data[1],0,tox_em))
+  
+  viterbi_mat[2,1] <- log(init[2]) + 
+    log(ClassificationAlgae(algae_data[1],1,mu_a,k_a,T,bin_prob)) + 
+    log(ClassificationToxin(toxin_data[1],toxin_data[1],1,tox_em))
   
   
-  viterbi_mat[2,time] <- log(ClassificationAlgae(algae_data[time],1,mu_a,k_a,T,.7)) + 
-    log(ClassificationToxin(toxin_data[time],toxin_data[time-1],1,tox_em)) + 
-    max(viterbi_mat[1,time-1] + log(tran_true[1,2]),
-        viterbi_mat[2,time-1] + log(tran_true[2,2]))
+  for (time in 2:sample_size){
+    viterbi_mat[1,time] <- log(ClassificationAlgae(algae_data[time],0,mu_a,k_a,T,bin_prob)) + 
+      log(ClassificationToxin(toxin_data[time],toxin_data[time-1],0,tox_em)) + 
+      max(viterbi_mat[1,time-1] + log(tran[1,1]),
+          viterbi_mat[2,time-1] + log(tran[2,1]))
+    
+    
+    viterbi_mat[2,time] <- log(ClassificationAlgae(algae_data[time],1,mu_a,k_a,T,bin_prob)) + 
+      log(ClassificationToxin(toxin_data[time],toxin_data[time-1],1,tox_em)) + 
+      max(viterbi_mat[1,time-1] + log(tran[1,2]),
+          viterbi_mat[2,time-1] + log(tran[2,2]))
+  }
+  
+  decoded_mc <- apply(viterbi_mat,2,which.max) - 1
+  
+  return(decoded_mc)
+  
 }
 
-decoded_mc <- apply(viterbi_mat,2,which.max) - 1
+viterbi_decode <- Viterbi(algae_data,toxin_data,est_param)
+posterior_decode <- PosteriorDecoding(algae_data, toxin_data, est_param)
+  
 
 sum(decoded_mc != true_mc) / sample_size
 sum(posterior_decode != true_mc) / sample_size
