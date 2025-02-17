@@ -80,7 +80,7 @@ cell_counts <- T
 threshold <- 0
 
 #Stopping threshold for EM
-epsilon <- .01
+epsilon <- .001
 
 #starting initial Markov state values
 init_true <- c(.75,.25)
@@ -224,5 +224,5 @@ viterbi_decode <- Viterbi(algae_data,toxin_data,est_param)
 posterior_decode <- PosteriorDecoding(algae_data, toxin_data, est_param)
   
 
-sum(decoded_mc != true_mc) / sample_size
+sum(viterbi_decode != true_mc) / sample_size
 sum(posterior_decode != true_mc) / sample_size
